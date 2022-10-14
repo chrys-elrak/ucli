@@ -12,6 +12,21 @@ const DEFAULT: &str = "*";
 const SELECTED: &str = ">";
 const DISABLED: &str = "x";
 
+/// The main struct for the ucli library.
+/// Usage:
+/// ```
+/// use ucli::item::Item;
+/// use ucli::select::Select;
+/// use ucli::ucli::Main;
+/// let options = Select::new(vec![Item::new_str("Akondro", 10, true),  Item::new_str("Tsaramaso", 5, false), Item::new("Pibasy".to_string(), 44, false),]);
+/// let value = Main::new(&options)
+/// .set_default_puce("⚪")
+/// .set_selected_puce("🟢")
+/// .set_disabled_puce("❌")
+/// .render()
+/// .get();
+/// println!("You selected: {:?}", value);
+/// ```
 pub struct Main<T>
 where
     T: Clone,
@@ -105,7 +120,7 @@ where
                     execute!(
                         self.stdout,
                         cursor::MoveTo(0, cursor as u16),
-                        PrintStyledContent(format!("{} {}", self.disabled, it.text).grey()),
+                        PrintStyledContent(format!("{} {}", self.disabled, it.text).black()),
                     )
                     .unwrap();
                 } else {
@@ -115,7 +130,7 @@ where
                                 self.stdout,
                                 cursor::MoveTo(0, cursor as u16),
                                 PrintStyledContent(
-                                    format!("{} {}", self.selected, it.text).green()
+                                    format!("{} {}", self.selected, it.text).black().on_green()
                                 ),
                             )
                             .unwrap();
@@ -124,7 +139,7 @@ where
                             execute!(
                                 self.stdout,
                                 cursor::MoveTo(0, cursor as u16),
-                                PrintStyledContent(format!("{} {}", self.default, it.text).red()),
+                                PrintStyledContent(format!("{} {}", self.default, it.text).white()),
                             )
                             .unwrap();
                         }
@@ -178,6 +193,11 @@ where
             };
         }
         disable_raw_mode().unwrap();
+        execute!(
+            self.stdout,
+            cursor::MoveTo(0, self.select.items.len() as u16 + 1),
+            event::DisableMouseCapture,
+        ).unwrap();
         self
     }
     /// Get the selected item
