@@ -1,12 +1,12 @@
-use crate::{select::Select, item::Item};
-use std::io::stdout;
+use crate::{item::Item, select::Select};
 use crossterm::{
     cursor,
     event::{self, read, Event, KeyCode},
     execute,
-    style::{PrintStyledContent, Stylize},
+    style::{Print, PrintStyledContent, Stylize},
     terminal::{self, disable_raw_mode, enable_raw_mode, ClearType},
 };
+use std::io::{stdout, Write};
 
 const DEFAULT: &str = "*";
 const SELECTED: &str = ">";
@@ -23,6 +23,7 @@ where
     use_mouse: bool,
     quit_cmd: KeyCode,
     stdout: std::io::Stdout,
+    prompt: String,
 }
 
 impl<T> Main<T>
@@ -38,6 +39,7 @@ where
             stdout: stdout(),
             use_mouse: false,
             quit_cmd: KeyCode::Char('q'),
+            prompt: String::from("Select an option: "),
         }
     }
     /// Set the default puce to use
@@ -73,6 +75,11 @@ where
     fn get_item(&self, index: usize) -> &Item<T> {
         &self.select.items[index]
     }
+    pub fn prompt(&mut self, message: String) -> &mut Self {
+        // remove all lines from message
+        self.prompt = message.replace("\n", "");
+        self
+    }
     /// Render the select
     /// It returns the current instance of the struct
     /// It should the last method called before `get`
@@ -81,21 +88,24 @@ where
         if self.use_mouse {
             execute!(self.stdout, event::EnableMouseCapture).unwrap();
         }
-        execute!(
-            self.stdout,
-            cursor::MoveTo(0, 0),
-            terminal::Clear(ClearType::All),
-        )
-        .unwrap();
         'MAIN_LOOP: loop {
+            execute!(
+                self.stdout,
+                terminal::Clear(ClearType::All),
+                cursor::MoveTo(0, 0),
+                Print(self.prompt.clone()),
+            )
+            .unwrap();
+            self.stdout.flush().unwrap();
             for i in 0..self.select.items.len() {
                 let mut it = self.select.items[i].clone();
                 it.is_current = self.select.current == i as i32;
+                let cursor = i as usize + 1;
                 if it.disabled {
                     execute!(
                         self.stdout,
-                        cursor::MoveTo(0, i as u16),
-                        PrintStyledContent(format!("{} {}",self.disabled, it.text).grey()),
+                        cursor::MoveTo(0, cursor as u16),
+                        PrintStyledContent(format!("{} {}", self.disabled, it.text).grey()),
                     )
                     .unwrap();
                 } else {
@@ -103,15 +113,17 @@ where
                         true => {
                             execute!(
                                 self.stdout,
-                                cursor::MoveTo(0, i as u16),
-                                PrintStyledContent(format!("{} {}",self.selected, it.text).green()),
+                                cursor::MoveTo(0, cursor as u16),
+                                PrintStyledContent(
+                                    format!("{} {}", self.selected, it.text).green()
+                                ),
                             )
                             .unwrap();
                         }
                         false => {
                             execute!(
                                 self.stdout,
-                                cursor::MoveTo(0, i as u16),
+                                cursor::MoveTo(0, cursor as u16),
                                 PrintStyledContent(format!("{} {}", self.default, it.text).red()),
                             )
                             .unwrap();
@@ -148,15 +160,16 @@ where
                 }
                 // Handle the mouse event => HOVER and LEFT_CLICK
                 Event::Mouse(e) => {
-                    if e.row < self.select.items.len() as u16
-                        && e.column < self.select.items[e.row as usize].text.len() as u16
+                    if e.row >= 1 && e.row <= self.select.items.len() as u16
                     {
-                        self.select.current = e.row as i32;
-                        if e.kind == event::MouseEventKind::Down(event::MouseButton::Left) {
-                            let it = self.get_item(self.select.current as usize);
-                            if !it.disabled {
-                                self.select.selected = self.select.current as i32;
-                                break 'MAIN_LOOP;
+                        if e.column < self.select.items[e.row as usize - 1].text.len() as u16 {
+                            self.select.current = e.row as i32 - 1;
+                            if e.kind == event::MouseEventKind::Down(event::MouseButton::Left) {
+                                let it = self.get_item(self.select.current as usize);
+                                if !it.disabled {
+                                    self.select.selected = self.select.current as i32;
+                                    break 'MAIN_LOOP;
+                                }
                             }
                         }
                     }

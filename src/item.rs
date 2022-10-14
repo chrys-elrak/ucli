@@ -7,19 +7,19 @@ pub struct Item<T> {
 }
 
 impl<T> Item<T> {
-    pub fn new_str(text: &str, value: T, disabled: Option<bool>) -> Self {
+    pub fn new_str(text: &str, value: T, disabled:bool) -> Self {
         Self {
             text: text.to_string(),
             value,
-            disabled: disabled.unwrap_or(false),
+            disabled: disabled,
             is_current: false,
         }
     }
-    pub fn new(text: String, value: T, disabled: Option<bool>) -> Self {
+    pub fn new(text: String, value: T, disabled:bool) -> Self {
         Self {
             text,
             value,
-            disabled: disabled.unwrap_or(false),
+            disabled: disabled,
             is_current: false,
         }
     }
