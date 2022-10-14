@@ -1,0 +1,11 @@
+[package]
+name = "ucli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Chrys Rakotonimanana <chrysrakk@gmail.com>"]
+description = "A command line interface for CLI applications"
+license = "MIT OR Apache-2.0"
+keywords = ["cli", "command-line-interface", "ucli", "utils", "utilities"]
+
+[dependencies]
+crossterm = "0.25.0"
