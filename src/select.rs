@@ -1,10 +1,12 @@
+use crate::item::Item;
+
 #[derive(Debug, Clone)]
 pub struct Select<T> 
 where T:Clone
 {
     pub items: Vec<Item<T>>,
     pub selected: i32,
-    pub current: usize,
+    pub current: i32,
 }
 
 impl<T> Select<T>
@@ -13,27 +15,9 @@ where T:Clone
     pub fn new(items: Vec<Item<T>>) -> Self {
         Self {
             items,
-            selected: -1,
-            current: 0,
+            selected: -1, // -1 means no item is selected
+            current: 0, // for cursor tracking
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Item<T> {
-    pub text: String,
-    pub value: T,
-    pub disabled: bool,
-    pub is_current: bool,
-}
-
-impl<T> Item<T> {
-    pub fn new(text: String, value: T, disabled: Option<bool>) -> Self {
-        Self {
-            text,
-            value,
-            disabled: disabled.unwrap_or(false),
-            is_current: false,
-        }
-    }
-}
