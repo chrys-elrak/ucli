@@ -178,6 +178,11 @@ where
             };
         }
         disable_raw_mode().unwrap();
+        execute!(
+            self.stdout,
+            cursor::MoveTo(0, self.select.items.len() as u16 + 1),
+            event::DisableMouseCapture,
+        ).unwrap();
         self
     }
     /// Get the selected item
