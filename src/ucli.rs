@@ -1,4 +1,5 @@
-use crate::select::{Item, Select};
+use crate::{select::Select, item::Item};
+use std::io::stdout;
 use crossterm::{
     cursor,
     event::{self, read, Event, KeyCode},
@@ -6,9 +7,8 @@ use crossterm::{
     style::{PrintStyledContent, Stylize},
     terminal::{self, disable_raw_mode, enable_raw_mode, ClearType},
 };
-use std::io::{stdout, Write};
 
-const DEFAULT: &str = "";
+const DEFAULT: &str = "*";
 const SELECTED: &str = ">";
 const DISABLED: &str = "x";
 
@@ -70,6 +70,9 @@ where
         self.quit_cmd = KeyCode::Char(cmd);
         self
     }
+    fn get_item(&self, index: usize) -> &Item<T> {
+        &self.select.items[index]
+    }
     /// Render the select
     /// It returns the current instance of the struct
     /// It should the last method called before `get`
@@ -78,36 +81,46 @@ where
         if self.use_mouse {
             execute!(self.stdout, event::EnableMouseCapture).unwrap();
         }
+        execute!(
+            self.stdout,
+            cursor::MoveTo(0, 0),
+            terminal::Clear(ClearType::All),
+        )
+        .unwrap();
         'MAIN_LOOP: loop {
-            execute!(
-                self.stdout,
-                cursor::MoveTo(0, 0),
-                terminal::Clear(ClearType::All),
-            )
-            .unwrap();
             for i in 0..self.select.items.len() {
                 let mut it = self.select.items[i].clone();
-                it.is_current = self.select.current == i;
-                match it.is_current {
-                    true => {
-                        execute!(
-                            self.stdout,
-                            cursor::MoveTo(0, i as u16),
-                            PrintStyledContent(it.text.green()),
-                        )
-                        .unwrap();
-                    }
-                    false => {
-                        execute!(
-                            self.stdout,
-                            cursor::MoveTo(0, i as u16),
-                            PrintStyledContent(it.text.red()),
-                        )
-                        .unwrap();
+                it.is_current = self.select.current == i as i32;
+                if it.disabled {
+                    execute!(
+                        self.stdout,
+                        cursor::MoveTo(0, i as u16),
+                        PrintStyledContent(format!("{} {}",self.disabled, it.text).grey()),
+                    )
+                    .unwrap();
+                } else {
+                    match it.is_current {
+                        true => {
+                            execute!(
+                                self.stdout,
+                                cursor::MoveTo(0, i as u16),
+                                PrintStyledContent(format!("{} {}",self.selected, it.text).green()),
+                            )
+                            .unwrap();
+                        }
+                        false => {
+                            execute!(
+                                self.stdout,
+                                cursor::MoveTo(0, i as u16),
+                                PrintStyledContent(format!("{} {}", self.default, it.text).red()),
+                            )
+                            .unwrap();
+                        }
                     }
                 }
             }
             match read().unwrap() {
+                // Handle the key event => UP, DOWN, ENTER, QUIT
                 Event::Key(key) => {
                     if key.code == self.quit_cmd {
                         break 'MAIN_LOOP;
@@ -119,36 +132,51 @@ where
                             }
                         }
                         KeyCode::Down => {
-                            if self.select.current < (self.select.items.len() - 1) as usize {
+                            if self.select.current < (self.select.items.len() - 1) as i32 {
                                 self.select.current += 1;
                             }
                         }
-                        KeyCode::Enter => {}
+                        KeyCode::Enter => {
+                            let it = self.get_item(self.select.current as usize);
+                            if !it.disabled {
+                                self.select.selected = self.select.current as i32;
+                                break 'MAIN_LOOP;
+                            }
+                        }
                         _ => {}
                     }
                 }
+                // Handle the mouse event => HOVER and LEFT_CLICK
                 Event::Mouse(e) => {
-                    println!("{}", e.row);
-                    if e.row < self.select.items.len() as u16 {
-                        self.select.current = e.row as usize;
+                    if e.row < self.select.items.len() as u16
+                        && e.column < self.select.items[e.row as usize].text.len() as u16
+                    {
+                        self.select.current = e.row as i32;
+                        if e.kind == event::MouseEventKind::Down(event::MouseButton::Left) {
+                            let it = self.get_item(self.select.current as usize);
+                            if !it.disabled {
+                                self.select.selected = self.select.current as i32;
+                                break 'MAIN_LOOP;
+                            }
+                        }
                     }
                 }
                 _ => {}
             };
-            self.stdout.flush().unwrap();
         }
         disable_raw_mode().unwrap();
         self
     }
     /// Get the selected item
     /// It should be called after `render`
-    /// It returns the selected item or `None` if no item is selected
-    pub fn get(&self) -> Option<Item<T>>
+    /// It returns the selected item value or `None` if no item is selected
+    pub fn get(&self) -> Option<T>
     where
         T: Clone,
     {
-        if self.select.selected > 0 {
-            return Some(self.select.items[self.select.current].clone());
+        if self.select.selected >= 0 {
+            let e = self.select.items[self.select.current as usize].to_owned();
+            return Some(e.value);
         }
         None
     }
