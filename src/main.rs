@@ -1,10 +1,11 @@
-use ucli::select::{Item, Select};
+use ucli::item::Item;
+use ucli::select::Select;
 use ucli::ucli::Main;
 
 fn main() {
     let options = Select::new(vec![
-        Item::new("Akondro".to_string(), 10, Some(true)),
-        Item::new("Tsaramaso".to_string(), 5, None),
+        Item::new_str("Akondro", 10, Some(true)),
+        Item::new_str("Tsaramaso", 5, None),
         Item::new("Pibasy".to_string(), 44, None),
         Item::new("Manga".to_string(), 77, None),
     ]);
