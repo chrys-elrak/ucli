@@ -105,7 +105,7 @@ where
                     execute!(
                         self.stdout,
                         cursor::MoveTo(0, cursor as u16),
-                        PrintStyledContent(format!("{} {}", self.disabled, it.text).grey()),
+                        PrintStyledContent(format!("{} {}", self.disabled, it.text).black()),
                     )
                     .unwrap();
                 } else {
@@ -115,7 +115,7 @@ where
                                 self.stdout,
                                 cursor::MoveTo(0, cursor as u16),
                                 PrintStyledContent(
-                                    format!("{} {}", self.selected, it.text).green()
+                                    format!("{} {}", self.selected, it.text).black().on_green()
                                 ),
                             )
                             .unwrap();
@@ -124,7 +124,7 @@ where
                             execute!(
                                 self.stdout,
                                 cursor::MoveTo(0, cursor as u16),
-                                PrintStyledContent(format!("{} {}", self.default, it.text).red()),
+                                PrintStyledContent(format!("{} {}", self.default, it.text).white()),
                             )
                             .unwrap();
                         }
