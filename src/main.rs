@@ -1,14 +1,18 @@
-use ucli::select::{Select, Item};
+use ucli::select::{Item, Select};
 use ucli::ucli::Main;
 
 fn main() {
     let options = Select::new(vec![
-        Item::new("Option 1".to_string(), "1".to_string(), None),
-        Item::new("Option 1".to_string(), "1".to_string(), None),
-        Item::new("Option 1".to_string(), "1".to_string(), None),
-        Item::new("Option 1".to_string(), "1".to_string(), None),
+        Item::new("Akondro".to_string(), 10, Some(true)),
+        Item::new("Tsaramaso".to_string(), 5, None),
+        Item::new("Pibasy".to_string(), 44, None),
+        Item::new("Manga".to_string(), 77, None),
     ]);
 
-    Main::new(&options)
-    .render();
+    let value = Main::new(&options)
+        .enable_mouse()
+        .set_quit_cmd('a')
+        .render()
+        .get();
+    println!("You selected: {:?}", value);
 }

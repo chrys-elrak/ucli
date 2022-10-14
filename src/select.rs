@@ -1,35 +1,39 @@
-
 #[derive(Debug, Clone)]
-pub struct Select {
-    pub items: Vec<Item>,
-    pub selected: usize,
+pub struct Select<T> 
+where T:Clone
+{
+    pub items: Vec<Item<T>>,
+    pub selected: i32,
     pub current: usize,
 }
 
-
-#[derive(Debug, Clone)]
-pub struct Item {
-    pub text: String,
-    pub value: String,
-    pub disabled: bool,
-}
-
-impl Select {
-    pub fn new(items: Vec<Item>) -> Self {
+impl<T> Select<T>
+where T:Clone
+ {
+    pub fn new(items: Vec<Item<T>>) -> Self {
         Self {
             items,
-            selected: 0,
-            current: 0
+            selected: -1,
+            current: 0,
         }
     }
 }
 
-impl Item {
-    pub fn new(text: String, value: String, disabled: Option<bool>) -> Self {
+#[derive(Debug, Clone)]
+pub struct Item<T> {
+    pub text: String,
+    pub value: T,
+    pub disabled: bool,
+    pub is_current: bool,
+}
+
+impl<T> Item<T> {
+    pub fn new(text: String, value: T, disabled: Option<bool>) -> Self {
         Self {
             text,
             value,
             disabled: disabled.unwrap_or(false),
+            is_current: false,
         }
     }
 }
