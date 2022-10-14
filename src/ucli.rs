@@ -12,6 +12,21 @@ const DEFAULT: &str = "*";
 const SELECTED: &str = ">";
 const DISABLED: &str = "x";
 
+/// The main struct for the ucli library.
+/// Usage:
+/// ```
+/// use ucli::item::Item;
+/// use ucli::select::Select;
+/// use ucli::ucli::Main;
+/// let options = Select::new(vec![Item::new_str("Akondro", 10, true),  Item::new_str("Tsaramaso", 5, false), Item::new("Pibasy".to_string(), 44, false),]);
+/// let value = Main::new(&options)
+/// .set_default_puce("⚪")
+/// .set_selected_puce("🟢")
+/// .set_disabled_puce("❌")
+/// .render()
+/// .get();
+/// println!("You selected: {:?}", value);
+/// ```
 pub struct Main<T>
 where
     T: Clone,
