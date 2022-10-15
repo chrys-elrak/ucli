@@ -108,6 +108,7 @@ where
                 self.stdout,
                 terminal::Clear(ClearType::All),
                 cursor::MoveTo(0, 0),
+                cursor::Hide,
                 Print(self.prompt.clone()),
             )
             .unwrap();
