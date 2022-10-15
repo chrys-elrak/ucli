@@ -57,6 +57,16 @@ where
             prompt: String::from("Select an option: "),
         }
     }
+    /// Set default value for select
+    /// Take the index of the item for the default value
+    /// Zero based index
+    pub fn default(&mut self, index: i32) -> &mut Self {
+        if self.select.items.len() > index as usize {
+            self.select.selected = index;
+            self.select.current = index;
+        }
+        self
+    }
     /// Set the default puce to use
     /// By default, it's an empty string
     pub fn set_default_puce(&mut self, puce: &'static str) -> &mut Self {
@@ -108,6 +118,7 @@ where
                 self.stdout,
                 terminal::Clear(ClearType::All),
                 cursor::MoveTo(0, 0),
+                cursor::Hide,
                 Print(self.prompt.clone()),
             )
             .unwrap();
@@ -164,6 +175,9 @@ where
                             }
                         }
                         KeyCode::Enter => {
+                            if self.select.current < 0 {
+                                break 'MAIN_LOOP;
+                            }
                             let it = self.get_item(self.select.current as usize);
                             if !it.disabled {
                                 self.select.selected = self.select.current as i32;
@@ -175,8 +189,7 @@ where
                 }
                 // Handle the mouse event => HOVER and LEFT_CLICK
                 Event::Mouse(e) => {
-                    if e.row >= 1 && e.row <= self.select.items.len() as u16
-                    {
+                    if e.row >= 1 && e.row <= self.select.items.len() as u16 {
                         if e.column < self.select.items[e.row as usize - 1].text.len() as u16 {
                             self.select.current = e.row as i32 - 1;
                             if e.kind == event::MouseEventKind::Down(event::MouseButton::Left) {
@@ -197,7 +210,8 @@ where
             self.stdout,
             cursor::MoveTo(0, self.select.items.len() as u16 + 1),
             event::DisableMouseCapture,
-        ).unwrap();
+        )
+        .unwrap();
         self
     }
     /// Get the selected item
@@ -212,5 +226,14 @@ where
             return Some(e.value);
         }
         None
+    }
+    /// Get the direct value of the selected item
+    /// It should be called after `render`
+    pub fn get_value(&self) -> Result<T, &'static str> {
+        if self.select.selected >= 0 {
+            let e = self.select.items[self.select.current as usize].clone();
+            return Ok(e.value);
+        }
+        Err("No item selected")
     }
 }
