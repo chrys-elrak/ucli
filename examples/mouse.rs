@@ -1,12 +1,12 @@
-use ucli::item::Item;
-use ucli::select::Select;
+use ucli::item::UCLISelectItem;
+use ucli::select::UCLISelect;
 use ucli::ucli::Main;
 
 fn main() {
-    let options = Select::new(vec![
-        Item::new_str("Cat", "🐈", true),
-        Item::new_str("Dog", "🐕", false),
-        Item::new_str("Mouse", "🐁", false),
+    let options = UCLISelect::new(vec![
+        UCLISelectItem::new("Cat".to_string(), "🐈", true),
+        UCLISelectItem::new("Dog".to_string(), "🐕", false),
+        UCLISelectItem::new("Mouse".to_string(), "🐁", false),
     ]);
     let value = Main::new(&options)
         .enable_mouse()

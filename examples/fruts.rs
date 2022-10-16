@@ -1,12 +1,12 @@
-use ucli::item::Item;
-use ucli::select::Select;
+use ucli::item::UCLISelectItem;
+use ucli::select::UCLISelect;
 use ucli::ucli::Main;
 
 fn main() {
-    let options = Select::new(vec![
-        Item::new_str("Pomma", 10, true),
-        Item::new_str("Paiso", 5, false),
-        Item::new("Pibasy".to_string(), 44, false),
+    let options = UCLISelect::new(vec![
+        UCLISelectItem::new("Pomma".to_string(), 10, true),
+        UCLISelectItem::new("Paiso".to_string(), 5, false),
+        UCLISelectItem::new("Pibasy".to_string(), 44, false),
     ]);
     let value = Main::new(&options)
         .set_default_puce("⚪")

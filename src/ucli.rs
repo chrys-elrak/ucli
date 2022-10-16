@@ -1,4 +1,4 @@
-use crate::{item::Item, select::Select};
+use crate::{item::UCLISelectItem, select::UCLISelect};
 use crossterm::{
     cursor,
     event::{self, read, Event, KeyCode},
@@ -6,11 +6,13 @@ use crossterm::{
     style::{Print, PrintStyledContent, Stylize},
     terminal::{self, disable_raw_mode, enable_raw_mode, ClearType},
 };
-use std::io::{stdout, Write};
+use std::{
+    io::{stdout, Stdout},
+};
 
-const DEFAULT: &str = "*";
-const SELECTED: &str = ">";
-const DISABLED: &str = "x";
+const DEFAULT_ICON: &str = "*";
+const SELECTED_ICON: &str = ">";
+const DISABLED_ICON: &str = "x";
 
 /// The main struct for the ucli library.
 /// Usage:
@@ -27,17 +29,14 @@ const DISABLED: &str = "x";
 /// .get();
 /// println!("You selected: {:?}", value);
 /// ```
-pub struct Main<T>
-where
-    T: Clone,
-{
-    select: Select<T>,
-    default: &'static str,
-    selected: &'static str,
-    disabled: &'static str,
+pub struct Main<T> {
+    select: UCLISelect<T>,
+    default_icon: String,
+    selected_icon: String,
+    disabled_icon: String,
     use_mouse: bool,
     quit_cmd: KeyCode,
-    stdout: std::io::Stdout,
+    stdout: Stdout,
     prompt: String,
 }
 
@@ -45,66 +44,119 @@ impl<T> Main<T>
 where
     T: Clone,
 {
-    pub fn new(select: &Select<T>) -> Self {
+    pub fn new(select: &UCLISelect<T>) -> Self {
         Self {
             select: select.clone(),
-            default: DEFAULT,
-            selected: SELECTED,
-            disabled: DISABLED,
+            default_icon: String::from(DEFAULT_ICON),
+            selected_icon: String::from(SELECTED_ICON),
+            disabled_icon: String::from(DISABLED_ICON),
             stdout: stdout(),
             use_mouse: false,
             quit_cmd: KeyCode::Char('q'),
             prompt: String::from("Select an option: "),
         }
     }
+
     /// Set default value for select
     /// Take the index of the item for the default value
     /// Zero based index
-    pub fn default(&mut self, index: i32) -> &mut Self {
+    pub fn set_default_value(&mut self, index: i32) -> &mut Self {
         if self.select.items.len() > index as usize {
-            self.select.selected = index;
-            self.select.current = index;
+            self.select.set_current(index);
+            self.select.set_selected();
         }
         self
     }
+
     /// Set the default puce to use
     /// By default, it's an empty string
-    pub fn set_default_puce(&mut self, puce: &'static str) -> &mut Self {
-        self.default = puce;
+    pub fn set_default_puce(&mut self, puce: &str) -> &mut Self {
+        self.default_icon = puce.to_string();
         self
     }
+
     /// Set the selected puce to use
     /// By default, it's a `>`
-    pub fn set_selected_puce(&mut self, puce: &'static str) -> &mut Self {
-        self.selected = puce;
+    pub fn set_selected_puce(&mut self, puce: &str) -> &mut Self {
+        self.selected_icon = puce.to_string();
         self
     }
+
     /// Set the disabled puce to use
     /// By default, it's a `x`
-    pub fn set_disabled_puce(&mut self, puce: &'static str) -> &mut Self {
-        self.disabled = puce;
+    pub fn set_disabled_puce(&mut self, puce: &str) -> &mut Self {
+        self.disabled_icon = puce.to_string();
         self
     }
+
     /// Enable mouse support
     /// By default, it's disabled
     pub fn enable_mouse(&mut self) -> &mut Self {
         self.use_mouse = true;
         self
     }
+
     /// Set the quit command
     /// By default, it's `q`
     pub fn set_quit_cmd(&mut self, cmd: char) -> &mut Self {
         self.quit_cmd = KeyCode::Char(cmd);
         self
     }
-    fn get_item(&self, index: usize) -> &Item<T> {
+
+    /// Get item from select by index
+    /// Zero based index
+    /// Private function
+    fn get_item(&self, index: usize) -> &UCLISelectItem<T> {
         &self.select.items[index]
     }
-    pub fn prompt(&mut self, message: String) -> &mut Self {
+
+    /// Set message propmt to display
+    pub fn set_prompt(&mut self, message: String) -> &mut Self {
         // remove all lines from message
         self.prompt = message.replace("\n", "");
         self
     }
+
+    /// Print disabled item
+    fn print_disabled(&mut self, cursor: usize) -> &Self {
+        let it = &self.select.items[cursor - 1];
+        execute!(
+            self.stdout,
+            cursor::MoveTo(0, cursor as u16),
+            PrintStyledContent(format!("{} {}", self.disabled_icon, it.text).black()),
+        )
+        .expect("Failed to print disabled item");
+        self
+    }
+
+    /// Print one item
+    pub fn print(&mut self, cursor: usize) -> &mut Self {
+        let it = &self.select.items[cursor - 1];
+        execute!(
+            self.stdout,
+            cursor::MoveTo(0, cursor as u16),
+            PrintStyledContent(format!("{} {}", self.default_icon, it.text).white()),
+        )
+        .expect("Failed to print");
+        self
+    }
+
+    /// Print current highlighted item
+    pub fn print_current(&mut self, cursor: usize) -> &mut Self {
+        let it = &self.select.items[cursor - 1];
+        execute!(
+            self.stdout,
+            cursor::MoveTo(0, cursor as u16),
+            PrintStyledContent(
+                format!("{} {}", self.selected_icon, it.text)
+                    .black()
+                    .on_green()
+            ),
+        )
+        .expect("Failed to print current");
+        self
+    }
+
     /// Render the select
     /// It returns the current instance of the struct
     /// It should the last method called before `get`
@@ -119,43 +171,21 @@ where
                 terminal::Clear(ClearType::All),
                 cursor::MoveTo(0, 0),
                 cursor::Hide,
-                Print(self.prompt.clone()),
+                Print(&self.prompt),
             )
             .unwrap();
-            self.stdout.flush().unwrap();
-            for i in 0..self.select.items.len() {
-                let mut it = self.select.items[i].clone();
-                it.is_current = self.select.current == i as i32;
+            'PRINT_LOOP: for i in 0..self.select.items.len() {
+                let it = &self.select.items[i];
                 let cursor = i as usize + 1;
                 if it.disabled {
-                    execute!(
-                        self.stdout,
-                        cursor::MoveTo(0, cursor as u16),
-                        PrintStyledContent(format!("{} {}", self.disabled, it.text).black()),
-                    )
-                    .unwrap();
-                } else {
-                    match it.is_current {
-                        true => {
-                            execute!(
-                                self.stdout,
-                                cursor::MoveTo(0, cursor as u16),
-                                PrintStyledContent(
-                                    format!("{} {}", self.selected, it.text).black().on_green()
-                                ),
-                            )
-                            .unwrap();
-                        }
-                        false => {
-                            execute!(
-                                self.stdout,
-                                cursor::MoveTo(0, cursor as u16),
-                                PrintStyledContent(format!("{} {}", self.default, it.text).white()),
-                            )
-                            .unwrap();
-                        }
-                    }
+                    self.print_disabled(cursor);
+                    continue 'PRINT_LOOP;
                 }
+                if self.select.current == i as i32 {
+                    self.print_current(cursor);
+                    continue 'PRINT_LOOP;
+                }
+                self.print(cursor);
             }
             match read().unwrap() {
                 // Handle the key event => UP, DOWN, ENTER, QUIT
@@ -178,9 +208,7 @@ where
                             if self.select.current < 0 {
                                 break 'MAIN_LOOP;
                             }
-                            let it = self.get_item(self.select.current as usize);
-                            if !it.disabled {
-                                self.select.selected = self.select.current as i32;
+                            if self.select() {
                                 break 'MAIN_LOOP;
                             }
                         }
@@ -193,9 +221,7 @@ where
                         if e.column < self.select.items[e.row as usize - 1].text.len() as u16 {
                             self.select.current = e.row as i32 - 1;
                             if e.kind == event::MouseEventKind::Down(event::MouseButton::Left) {
-                                let it = self.get_item(self.select.current as usize);
-                                if !it.disabled {
-                                    self.select.selected = self.select.current as i32;
+                                if self.select() {
                                     break 'MAIN_LOOP;
                                 }
                             }
@@ -210,10 +236,22 @@ where
             self.stdout,
             cursor::MoveTo(0, self.select.items.len() as u16 + 1),
             event::DisableMouseCapture,
+            cursor::Show,
         )
         .unwrap();
         self
     }
+
+    /// Select the element int the current cursor if not disabled
+    fn select(&mut self) -> bool {
+        let it = self.get_item(self.select.current as usize);
+        if !it.disabled {
+            self.select.set_selected();
+            return true;
+        }
+        false
+    }
+
     /// Get the selected item
     /// It should be called after `render`
     /// It returns the selected item value or `None` if no item is selected
@@ -221,18 +259,16 @@ where
     where
         T: Clone,
     {
-        if self.select.selected >= 0 {
-            let e = self.select.items[self.select.current as usize].to_owned();
-            return Some(e.value);
+        if let Some(it) = self.select.get_selected() {
+            return Some(it.value.clone());
         }
         None
     }
     /// Get the direct value of the selected item
     /// It should be called after `render`
     pub fn get_value(&self) -> Result<T, &'static str> {
-        if self.select.selected >= 0 {
-            let e = self.select.items[self.select.current as usize].clone();
-            return Ok(e.value);
+        if let Some(s) = self.select.get_selected() {
+            return Ok(s.value.clone());
         }
         Err("No item selected")
     }
