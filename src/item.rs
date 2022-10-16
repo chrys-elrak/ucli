@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct UCLISelectItem<T> {
     pub text: String,
     pub value: T,

@@ -8,10 +8,11 @@ fn main() {
         UCLISelectItem::new("Paiso".to_string(), 5, false),
         UCLISelectItem::new("Pibasy".to_string(), 44, false),
     ]);
-    let value = Main::new(&options)
+    let value = Main::new(options)
         .set_default_puce("⚪")
         .set_selected_puce("🟢")
         .set_disabled_puce("❌")
+        .set_default_value(0)
         .render()
         .get();
     println!("You selected: {:?}", value);

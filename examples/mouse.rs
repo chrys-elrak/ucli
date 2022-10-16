@@ -8,7 +8,7 @@ fn main() {
         UCLISelectItem::new("Dog".to_string(), "🐕", false),
         UCLISelectItem::new("Mouse".to_string(), "🐁", false),
     ]);
-    let value = Main::new(&options)
+    let value = Main::new(options)
         .enable_mouse()
         .render()
         .get();

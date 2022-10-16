@@ -6,9 +6,7 @@ use crossterm::{
     style::{Print, PrintStyledContent, Stylize},
     terminal::{self, disable_raw_mode, enable_raw_mode, ClearType},
 };
-use std::{
-    io::{stdout, Stdout},
-};
+use std::io::{stdout, Stdout};
 
 const DEFAULT_ICON: &str = "*";
 const SELECTED_ICON: &str = ">";
@@ -20,7 +18,7 @@ const DISABLED_ICON: &str = "x";
 /// use ucli::item::Item;
 /// use ucli::select::Select;
 /// use ucli::ucli::Main;
-/// let options = Select::new(vec![Item::new_str("Akondro", 10, true),  Item::new_str("Tsaramaso", 5, false), Item::new("Pibasy".to_string(), 44, false),]);
+/// let options = Select::new(vec![Item::new("Akondro", 10, true),  Item::new("Tsaramaso", 5, false), Item::new("Pibasy".to_string(), 44, false),]);
 /// let value = Main::new(&options)
 /// .set_default_puce("⚪")
 /// .set_selected_puce("🟢")
@@ -29,6 +27,7 @@ const DISABLED_ICON: &str = "x";
 /// .get();
 /// println!("You selected: {:?}", value);
 /// ```
+#[derive(Debug)]
 pub struct Main<T> {
     select: UCLISelect<T>,
     default_icon: String,
@@ -40,13 +39,10 @@ pub struct Main<T> {
     prompt: String,
 }
 
-impl<T> Main<T>
-where
-    T: Clone,
-{
-    pub fn new(select: &UCLISelect<T>) -> Self {
+impl<T: Clone> Main<T> {
+    pub fn new(select: UCLISelect<T>) -> Self {
         Self {
-            select: select.clone(),
+            select,
             default_icon: String::from(DEFAULT_ICON),
             selected_icon: String::from(SELECTED_ICON),
             disabled_icon: String::from(DISABLED_ICON),
@@ -60,10 +56,45 @@ where
     /// Set default value for select
     /// Take the index of the item for the default value
     /// Zero based index
+    /// # Exemples
+    /// ```
+    /// use ucli::item::UCLISelectItem;
+    /// use ucli::select::UCLISelect;
+    /// use ucli::ucli::Main;
+    /// let options = UCLISelect::new(vec![
+    ///     UCLISelectItem::new("Akondro".to_string(), 10, true),
+    ///     UCLISelectItem::new("Tsaramaso".to_string(), 5, false),
+    ///     UCLISelectItem::new("Pibasy".to_string(), 44, false),]);
+    /// let value = Main::new(options)
+    ///     .set_default_value(1)
+    ///     .render()
+    ///     .get();
+    ///  assert_eq!(value, Some(5));
+    /// ```
+    /// When the default vaue is disabled, this will make code panic
+    /// ```should_panic
+    /// use ucli::item::UCLISelectItem;
+    /// use ucli::select::UCLISelect;
+    /// use ucli::ucli::Main;
+    /// let options = UCLISelect::new(vec![
+    ///     UCLISelectItem::new("Akondro".to_string(), 10, true),
+    ///     UCLISelectItem::new("Tsaramaso".to_string(), 5, false),
+    ///     UCLISelectItem::new("Pibasy".to_string(), 44, false),
+    /// ]);
+    /// let value = Main::new(options)
+    ///     .set_default_value(0) // this element is disabled
+    ///     .render()
+    ///     .get();
+    /// ```
     pub fn set_default_value(&mut self, index: i32) -> &mut Self {
         if self.select.items.len() > index as usize {
-            self.select.set_current(index);
-            self.select.set_selected();
+            let it = self.get_item(index as usize);
+            if !it.disabled {
+                self.select.set_current(index);
+                self.select.set_selected();
+            } else {
+                panic!("The default item is disabled, please select another item to be the default selected item or make sure the item is not disabled");
+            }
         }
         self
     }
