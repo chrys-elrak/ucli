@@ -15,16 +15,20 @@ const DISABLED_ICON: &str = "x";
 /// The main struct for the ucli library.
 /// Usage:
 /// ```
-/// use ucli::item::Item;
-/// use ucli::select::Select;
+/// use ucli::item::UCLISelectItem;
+/// use ucli::select::UCLISelect;
 /// use ucli::ucli::Main;
-/// let options = Select::new(vec![Item::new("Akondro", 10, true),  Item::new("Tsaramaso", 5, false), Item::new("Pibasy".to_string(), 44, false),]);
-/// let value = Main::new(&options)
-/// .set_default_puce("⚪")
-/// .set_selected_puce("🟢")
-/// .set_disabled_puce("❌")
-/// .render()
-/// .get();
+/// let options = UCLISelect::new(vec![
+///     UCLISelectItem::new("Akondro".to_string(), 10, true),
+///     UCLISelectItem::new("Tsaramaso".to_string(), 5, false), 
+///     UCLISelectItem::new("Pibasy".to_string(), 44, false),
+/// ]);
+/// let value = Main::new(options)
+///     .set_default_puce("⚪")
+///     .set_selected_puce("🟢")
+///     .set_disabled_puce("❌")
+///     .render()
+///     .get();
 /// println!("You selected: {:?}", value);
 /// ```
 #[derive(Debug)]
