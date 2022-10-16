@@ -45,7 +45,9 @@ pub struct Main<T> {
     is_multi: bool,
 }
 
-impl<T: Clone> Main<T> {
+impl <T>Main<T>
+where T: Clone
+{
     pub fn new(select: UCLISelect<T>) -> Self {
         Self {
             select,
