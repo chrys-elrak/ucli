@@ -11,6 +11,6 @@ fn main() {
     let value = Main::new(options)
         .enable_mouse()
         .render()
-        .get();
+        .get_value();
     println!("You selected: {:?}", value);
 }

@@ -1,12 +1,9 @@
-use std::vec;
-
 use crate::item::UCLISelectItem;
 #[derive(Debug)]
 pub struct UCLISelect<T> {
     pub items: Vec<UCLISelectItem<T>>,
     selected: i32,
     pub current: i32,
-    pub selections: Vec<UCLISelectItem<T>>
 }
 
 impl<T> UCLISelect<T> {
@@ -15,7 +12,6 @@ impl<T> UCLISelect<T> {
             items,
             selected: -1, // -1 means no item is selected
             current: -1, // for cursor tracking
-            selections: vec![]
         }
     }
     /// Set the selected item to the current item

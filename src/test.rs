@@ -11,20 +11,8 @@ pub mod test {
             UCLISelectItem::default("Option 2", 2),
             UCLISelectItem::default("Option 3", 10),
         ]);
-        let value = Main::new(select).render().get();
-        assert_eq!(value, Some(10));
-    }
-    /// Return err
-    /// Press quit button 'q'
-    #[test]
-    pub fn no_selection_error() {
-        let select = UCLISelect::new(vec![
-            UCLISelectItem::default("Option 1", 10),
-            UCLISelectItem::default("Option 2", 10),
-            UCLISelectItem::default("Option 3", 5),
-        ]);
         let value = Main::new(select).render().get_value();
-        assert_eq!(value, Err("No item selected"));
+        assert_eq!(value, Some(10));
     }
     /// Get Ok()
     #[test]
@@ -45,7 +33,7 @@ pub mod test {
             UCLISelectItem::default("Option 2", 10),
             UCLISelectItem::default("Option 3", 5),
         ]);
-        let value = Main::new(select).set_default_value(2).render().get();
+        let value = Main::new(select).set_default_value(2).render().get_value();
         assert_eq!(value, Some(5));
     }
     /// Can't get the value 5 because it is disabled
@@ -56,7 +44,7 @@ pub mod test {
             UCLISelectItem::new("Option 2".to_string(), 5, true),
             UCLISelectItem::default("Option 3", 10),
         ]);
-        let value = Main::new(select).render().get();
+        let value = Main::new(select).render().get_value();
         assert_ne!(value.unwrap(), 5);
     }
     /// None should be returned when the user press `q`
@@ -68,7 +56,7 @@ pub mod test {
             UCLISelectItem::default("Option 2", 10),
             UCLISelectItem::default("Option 3", 10),
         ]);
-        let value = Main::new(select).render().get();
+        let value = Main::new(select).render().get_value();
         assert_eq!(value, None);
     }
 }

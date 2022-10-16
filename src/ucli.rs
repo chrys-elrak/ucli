@@ -20,7 +20,7 @@ const DISABLED_ICON: &str = "x";
 /// use ucli::ucli::Main;
 /// let options = UCLISelect::new(vec![
 ///     UCLISelectItem::new("Akondro".to_string(), 10, true),
-///     UCLISelectItem::new("Tsaramaso".to_string(), 5, false), 
+///     UCLISelectItem::new("Tsaramaso".to_string(), 5, false),
 ///     UCLISelectItem::new("Pibasy".to_string(), 44, false),
 /// ]);
 /// let value = Main::new(options)
@@ -41,6 +41,8 @@ pub struct Main<T> {
     quit_cmd: KeyCode,
     stdout: Stdout,
     prompt: String,
+    selections: Vec<i32>,
+    is_multi: bool,
 }
 
 impl<T: Clone> Main<T> {
@@ -54,7 +56,14 @@ impl<T: Clone> Main<T> {
             use_mouse: false,
             quit_cmd: KeyCode::Char('q'),
             prompt: String::from("Select an option: "),
+            selections: Vec::new(),
+            is_multi: false,
         }
+    }
+
+    pub fn set_multi(&mut self, is_multi: bool) -> &mut Self {
+        self.is_multi = is_multi;
+        self
     }
 
     /// Set default value for select
@@ -184,8 +193,8 @@ impl<T: Clone> Main<T> {
             cursor::MoveTo(0, cursor as u16),
             PrintStyledContent(
                 format!("{} {}", self.selected_icon, it.text)
-                    .black()
-                    .on_green()
+                    .italic()
+                    .green()
             ),
         )
         .expect("Failed to print current");
@@ -209,14 +218,15 @@ impl<T: Clone> Main<T> {
                 Print(&self.prompt),
             )
             .unwrap();
-            'PRINT_LOOP: for i in 0..self.select.items.len() {
-                let it = &self.select.items[i];
+            let max = self.select.items.len();
+            'PRINT_LOOP: for i in 0..max {
+                let it = self.get_item(i);
                 let cursor = i as usize + 1;
                 if it.disabled {
                     self.print_disabled(cursor);
                     continue 'PRINT_LOOP;
                 }
-                if self.select.current == i as i32 {
+                if self.select.current == i as i32 || self.selections.contains(&(i as i32)) {
                     self.print_current(cursor);
                     continue 'PRINT_LOOP;
                 }
@@ -240,12 +250,11 @@ impl<T: Clone> Main<T> {
                             }
                         }
                         KeyCode::Enter => {
-                            if self.select.current < 0 {
-                                break 'MAIN_LOOP;
-                            }
-                            if self.select() {
-                                break 'MAIN_LOOP;
-                            }
+                            self.select(true);
+                            break 'MAIN_LOOP;
+                        }
+                        KeyCode::Char(' ') => {
+                            self.select(false);
                         }
                         _ => {}
                     }
@@ -256,7 +265,7 @@ impl<T: Clone> Main<T> {
                         if e.column < self.select.items[e.row as usize - 1].text.len() as u16 {
                             self.select.current = e.row as i32 - 1;
                             if e.kind == event::MouseEventKind::Down(event::MouseButton::Left) {
-                                if self.select() {
+                                if self.select(false) {
                                     break 'MAIN_LOOP;
                                 }
                             }
@@ -278,33 +287,55 @@ impl<T: Clone> Main<T> {
     }
 
     /// Select the element int the current cursor if not disabled
-    fn select(&mut self) -> bool {
-        let it = self.get_item(self.select.current as usize);
-        if !it.disabled {
-            self.select.set_selected();
+    /// is ok if multi and press enter
+    fn select(&mut self, confirm: bool) -> bool {
+        let current = self.select.current;
+        let it = self.get_item(current as usize);
+        if it.disabled || (self.is_multi && confirm) {
+            return false;
+        }
+        if self.is_multi {
+                 if self.selections.contains(&current) {
+                self.selections.retain(|&x| x != current);
+            } else {
+                self.selections.push(current);
+            }
             return true;
         }
-        false
+        self.select.set_selected();
+        return true;
     }
 
     /// Get the selected item
+    /// Get the selected item
     /// It should be called after `render`
     /// It returns the selected item value or `None` if no item is selected
-    pub fn get(&self) -> Option<T>
+    pub fn get_value(&self) -> Option<T>
     where
         T: Clone,
     {
+        if self.is_multi {
+            panic!("You can't use `get` method with multi select");
+        }
         if let Some(it) = self.select.get_selected() {
             return Some(it.value.clone());
         }
         None
     }
-    /// Get the direct value of the selected item
-    /// It should be called after `render`
-    pub fn get_value(&self) -> Result<T, &'static str> {
-        if let Some(s) = self.select.get_selected() {
-            return Ok(s.value.clone());
+    /// Get selected values
+    /// Get the selected item
+    /// It return a vector of selected values
+    pub fn get_values(&self) -> Vec<T>
+    where
+        T: Clone,
+    {
+        if !self.is_multi {
+            panic!("this can only be called on multi select");
         }
-        Err("No item selected")
+        return self
+            .selections
+            .iter()
+            .map(|i| self.select.items[*i as usize].value.clone())
+            .collect();
     }
 }
