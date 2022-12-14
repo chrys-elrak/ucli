@@ -195,7 +195,7 @@ impl<T: Clone> Main<T> {
     /// Render the select
     /// It returns the current instance of the struct
     /// It should the last method called before `get`
-    pub fn render(&mut self) -> &mut Self {
+    pub fn render(&mut self, clear: bool) -> &mut Self {
         enable_raw_mode().unwrap();
         if self.use_mouse {
             execute!(self.stdout, event::EnableMouseCapture).unwrap();
@@ -203,12 +203,14 @@ impl<T: Clone> Main<T> {
         'MAIN_LOOP: loop {
             execute!(
                 self.stdout,
-                terminal::Clear(ClearType::All),
                 cursor::MoveTo(0, 0),
                 cursor::Hide,
                 Print(&self.prompt),
             )
             .unwrap();
+            if clear {
+                execute!(self.stdout, terminal::Clear(ClearType::All)).unwrap();
+            }
             'PRINT_LOOP: for i in 0..self.select.items.len() {
                 let it = &self.select.items[i];
                 let cursor = i as usize + 1;

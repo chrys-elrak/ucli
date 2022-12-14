@@ -14,7 +14,7 @@ fn main() {
             .set_selected_puce("🟢")
             .set_disabled_puce("❌")
             .set_default_value(0)
-            .render()
+            .render(true)
             .get();
             println!("You selected: {:?}", value);
     }
