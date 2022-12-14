@@ -4,7 +4,7 @@ use ucli::ucli::Main;
 
 fn main() {
     let options = UCLISelect::new(vec![
-        UCLISelectItem::new("Pomma".to_string(), 10, true),
+        UCLISelectItem::new("Pomma".to_string(), 10, false),
         UCLISelectItem::new("Paiso".to_string(), 5, false),
         UCLISelectItem::new("Pibasy".to_string(), 44, false),
     ]);
