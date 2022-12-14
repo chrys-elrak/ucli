@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UCLISelectItem<T> {
     pub text: String,
     pub value: T,
@@ -10,7 +10,7 @@ impl<T> UCLISelectItem<T> {
         Self {
             text,
             value,
-            disabled: disabled,
+            disabled,
         }
     }
     pub fn default(text: &str, value: T) -> Self {

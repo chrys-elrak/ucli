@@ -1,5 +1,5 @@
 use crate::item::UCLISelectItem;
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UCLISelect<T> {
     pub items: Vec<UCLISelectItem<T>>,
     selected: i32,
