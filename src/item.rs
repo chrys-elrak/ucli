@@ -10,7 +10,7 @@ impl<T> UCLISelectItem<T> {
         Self {
             text,
             value,
-            disabled: disabled,
+            disabled,
         }
     }
     pub fn default(text: &str, value: T) -> Self {
