@@ -1,6 +1,6 @@
 [package]
 name = "ucli"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 authors = ["Chrys Rakotonimanana <chrysrakk@gmail.com>"]
 description = "A command line interface for CLI applications"
